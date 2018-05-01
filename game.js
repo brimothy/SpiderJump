@@ -30,7 +30,7 @@ var leftPressed = false;
 var upPressed = false;
 var downPressed = false;
 
-var disappearanceSpeed = .05;
+var disappearanceSpeed = .1;
 var gameHeight = canvas.height;
 var currentBottom = 0;
 
