@@ -30,9 +30,10 @@ var leftPressed = false;
 var upPressed = false;
 var downPressed = false;
 
-var disappearanceSpeed = .01;
+var disappearanceSpeed = .01; //how fast the webs dissappear
 var gameHeight = canvas.height;
-var currentBottom = 0;
+var currentBottom = 0; // the bottom of the canvas in relation
+// to the game
 
 var highestWebHeight = 0;
 
@@ -172,16 +173,38 @@ function isFalling(){
 */
 function drawWebs(){
 	for(var i = 0; i < webs.length; i ++){
-		// the strength of the web determines how brightly
-		// the line is drawn
-		context.strokeStyle = `rgba(255, 255, 255, ${webs[i][4]})`;
-		context.beginPath();
-		context.moveTo(webs[i][0], gameYToCanvasY(webs[i][1]));
-		context.lineTo(webs[i][2], gameYToCanvasY(webs[i][3]));
-		context.stroke();
-		context.closePath();     
-		context.strokeStyle = "#ffffff";		
+		// only draw the web if any part of it intersects
+		// with the current location of the canvas
+		if(isWebOnCanvas(webs[i])){
+			// the strength of the web determines how brightly
+			// the line is drawn
+			context.strokeStyle = `rgba(255, 255, 255, ${webs[i][4]})`;
+			context.beginPath();
+			context.moveTo(webs[i][0], gameYToCanvasY(webs[i][1]));
+			context.lineTo(webs[i][2], gameYToCanvasY(webs[i][3]));
+			context.stroke();
+			context.closePath();     
+			context.strokeStyle = "#ffffff";
+		}		
 	}
+}
+
+/**
+* Determines whether a web would be on the canvas
+* @param {array} web
+* @return {boolean}
+*/
+function isWebOnCanvas(web){
+		var webYMin = Math.min(web[1],web[3]);
+		var webYMax = Math.max(web[1],web[3]);
+		if(webYMin > currentBottom && webYMin < currentBottom + canvas.height){
+			return true;
+		}
+		else if(webYMax > currentBottom && webYMax < currentBottom + canvas.height){
+			return true;
+			
+		}
+		return false;
 }
 
 /**
@@ -259,7 +282,6 @@ function touching(web,x,y){
 * Draws everything. Is called recursively
 */
 function draw(){
-	
 	// have the canvas follow the spider
 	currentBottom = spiderY - canvas.height/2;
 	
@@ -327,16 +349,28 @@ function draw(){
 	wearDownWeb(currentWeb);
 	drawSpider();
 	drawWebs();
-	requestAnimationFrame(draw);
 	removeOldWebs();
+	requestAnimationFrame(draw);
 }
-
+/**
+* Makes a new web if the current tallest web is shorter
+* than the top of the canvas.
+*/
 function generateNewWebs(){
 	if(highestWebHeight < spiderY + canvas.height/2){
-		var lastWeb = webs[webs.length - 1];
+		// if the tallest web is shorter than the top of the canvas
+		var lastWeb = webs[webs.length - 1]; // the tallest web
 		var determine = Math.random();
+		
+		// the y distance between lower end of the new web and the
+		// the old web - using (maxJumpHeight - spiderRadius*2) ensures
+		// that the web will always be reachable
 		var d1 = Math.floor(Math.random()*(maxJumpHeight - spiderRadius*2));
+		// the y distance between higher end of the new web and the
+		// the old web
 		var d2 = Math.floor(50 + Math.random()*90);
+		
+		// adds randomness to the web generation
 		if(determine < .5){
 			var newWeb = [lastWeb[0],lastWeb[1] + d1,lastWeb[2],lastWeb[1] + d1 + d2,1,"normal"];
 			webs = webs.concat([newWeb]);
@@ -356,8 +390,8 @@ function generateNewWebs(){
 */
 function wearDownWeb(web){
 	if(web!=null) {
-		if(web[5] != "floor" && web[5] != "roof"){
-			//the floor and roof don't get worn down
+		if(web[5] != "floor"){
+			//the bottom web doesn't get worn down
 			if(web[4] - disappearanceSpeed >= 0){
 				web[4] = web[4] - disappearanceSpeed;
 			}
@@ -449,11 +483,16 @@ function fall(fallDistance){
 	spiderY = spiderY + currentY;
 }
 
+/**
+* Removes a web when the opacity has reached (almost) 0
+*/
 function removeOldWebs(){
 	for(var i = 0; i < webs.length; i++){
 		if(isWebGone(webs[i])){
-			// if one web dissappears, get rid of all webs beneath it
 			webs = webs.slice(0,i).concat(webs.slice(i +1,webs.length));
+			// only one web will dissappear at a time (the spider can only
+			// be on one web at one) so we can quit the for-loop having 
+			// found a broken web
 			break;
 		}
 	}
